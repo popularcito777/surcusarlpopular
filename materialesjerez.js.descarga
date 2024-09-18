@@ -1,0 +1,139 @@
+
+jQuery(function ($) {
+
+    console.log('----> materialesjerez.js loaded...');
+
+    if($(".zoom-app-notice").length > 0){
+
+        var zoomId = $(".zoom-app-notice > p > strong").html();
+
+        // overwrite plugin text
+        $(".zoom-app-notice").html(`
+            <p>Nota: Si tiene problemas para unirse a la reunión a continuación, ingrese la ID de la reunión: <strong>${zoomId}</strong> y únase a través de la aplicación Zoom.<p>
+            <div class="zoom-links">
+                <li>
+                    <a target="_blank" href="https://zoom.us/j/${zoomId}" class="join-link retry-url">Únete a través de la aplicación Zoom</a>
+                </li>
+                <li>
+                    <a target="_blank" href="https://zoom.us/support/download" class="download-link">Descarga Zoom desde la tienda de aplicaciones</a>
+                </li>
+            </div>
+            <div id="loading">
+                </br>
+                Cargando sesión...
+            </div>
+            </br>
+        `);
+
+        // hide iframe canvas
+        $("#zoom_video_uri").css('visibility','hidden');
+
+        setTimeout(() => {
+                    
+            $("#loading").css('display','none');
+            $("#zoom_video_uri").css('visibility','visible').hide().fadeIn();                           
+                    
+            console.log('----> zoom iframe ready...');
+                    
+        }, 6000);
+
+    }
+    
+    if($(".join-via-browser-body").length > 0){
+
+        console.log('----> materialesjerez zoom script loaded...');        
+        
+        // format iframe sesion login form
+        setTimeout(() => {
+            
+            var iframe = $("#zoom_video_uri > iframe");
+            var src = $(iframe).attr("src");
+
+            $(iframe).attr("sandbox", "allow-forms allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals");
+            $(iframe).attr('src', src);
+            
+            console.log('----> zoom iframe loaded...');
+        
+            setTimeout(() => {
+                
+                formatIframe();
+                
+            }, 1000);
+
+        }, 1000);
+
+    }
+    
+    function formatIframe(){
+
+        $("#meeting_password").css('display','none'); 
+        $(".dpen-zoom-browser-meeting--info").css('display','none'); 
+
+        $("#display_name").attr("placeholder","Ingresa tu nombre");
+        $("#display_name").val("");
+
+        $("#meeting_lang").val("es-ES");
+        $("#meeting_lang").css('display','none');
+
+        $("#dpen-zoom-browser-meeting-join-mtg").attr("disabled", true);
+        $("#dpen-zoom-browser-meeting-join-mtg").html("Unirse");
+
+        $("#display_name").on("change", function(){
+
+            if($("#display_name").val() != ""){
+                $("#dpen-zoom-browser-meeting-join-mtg").attr("disabled", false);
+            }
+
+        });
+
+        $("#dpen-zoom-browser-meeting-join-mtg").on("click", activateCheck());
+
+        console.log('----> zoom iframe formatted...');
+
+    }  
+
+    function endSession(){
+
+        $(".ReactModalPortal").remove();
+
+        console.log('ReactModalPortal removed');
+
+        $(".dpen-zoom-browser-meeting--meeting-form").remove();
+
+        $("#zmmtg-root").html(`
+            <div style="display:flex;align-items:center;justify-content:center;height:100%">
+                <p style="width:75%;background-color:white;text-align:center;padding:20px;">La sesión no está disponible en estos momentos, recarga la pagina para volver a intentarlo</p>
+            </div>
+        `);
+        // clearInterval(checkIfModalExist);
+    }
+
+    function activateCheck(){
+
+        var checkIfModalExist = setInterval(function() {
+
+            // console.log('checkIfModalExist');
+
+            if($(".zm-modal").length) {
+                console.log('zm-modal exists');
+                endSession();                   
+            }
+            
+        }, 500);
+    
+        var checkIfLeaveButtonExist = setInterval(function() {
+
+            // console.log('checkIfLeaveButtonExist');
+
+            if($(".footer__leave-btn").length) {
+                clearInterval(checkIfLeaveButtonExist);
+                $(".footer__leave-btn").on("click", function(){
+                    location.reload();
+                });            
+            }
+
+        }, 500);
+
+    }
+                
+});

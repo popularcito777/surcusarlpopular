@@ -1,0 +1,63 @@
+(function ($) {
+
+    "use strict";
+
+    $(document).ready(function () {
+
+        if ($('.av-sticky-submenu').length) {
+
+            // init params
+            var header = $('.av-logo-container');
+            var menu = $('.av-sticky-submenu');
+            var menu_y_pos = parseInt(menu.offset().top) - 150;
+            var menu_height = menu.height();
+
+            var window_width = $(window).width();
+            var is_fixed = false;
+            var is_responsive = (window_width >= 780) ? false : true;
+
+
+
+            // get is_responsive
+            $(window).resize(function () {
+                window_width = $(window).width();
+                is_responsive = (window_width >= 780) ? false : true;
+                apply_styles();
+            });
+
+            // get is_fixed
+            $(document).scroll(function () {
+                var distnace_from_top_of_window = $(this).scrollTop();
+                if (distnace_from_top_of_window > menu_y_pos + menu_height) {
+                    is_fixed = true;
+                } else if (distnace_from_top_of_window <= menu_y_pos) {
+                    is_fixed = false;
+                }
+                apply_styles();
+            });
+
+            // apply_styles
+            var apply_styles = function () {
+
+                // set styles dynamically
+                var header_height = header.height();
+                var display = is_responsive ? 'none' : 'block';
+                var position = is_fixed ? 'fixed !important' : 'relative';
+                var z_index = menu.css('z-index');
+                var top = is_fixed ? `${header_height}px` : 'auto';
+
+                // apply
+                var style = `display: ${display}; position: ${position}; z-index: ${z_index}; top: ${top};`;
+                // console.log('apply styles', style);
+                menu.attr('style', style);
+
+            }
+
+            apply_styles();
+
+        }
+
+    });
+
+
+})(jQuery);
