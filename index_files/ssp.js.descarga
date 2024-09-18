@@ -1,0 +1,302 @@
+jQuery(document).ready(function (e) {
+    jQuery('#search').on('keyup', function (e) {
+
+        var productDesk = jQuery('#modulesDesk .modulesDeskContent'),
+            catDesk = jQuery('#categoriesDesk'),
+            word = jQuery(this).val(),
+            desk = jQuery('.containerLiveSearchDesk');
+
+
+        if
+        (word === '') {
+            jQuery('#modulesDesk .modulesDeskContent').html('');
+            jQuery('#categoriesDesk').html('');
+            return;
+        }
+
+
+        productDesk.html('');
+        catDesk.html('');
+        //desk.addClass('hidden');
+        //desk.addClass('visuallyhidden');
+
+        if (word.length > 3) {
+            addProducts(word);
+            /* addCategories(word); */
+
+            // desk.removeClass('hidden');
+            // setTimeout(function () {
+            //     desk.removeClass('visuallyhidden');
+            // }, 20);
+        }
+
+
+    });
+
+    jQuery(document).on({
+        mouseenter: function () {
+            jQuery(this).find('.mini-search-info').css('color', '#FF6600');
+        },
+        mouseleave: function () {
+            jQuery(this).find('.mini-search-info').css('color', '#666');
+        }
+    }, "#modulesDesk .modulesDeskContent .mini-search-product");
+
+});
+
+
+function addProducts(word) {
+    /*var images = 'https://download.truper.com/imgTel/ch/';*/
+    var images = 'https://www.truper.com/admin/images/ch/';
+    var dataSheet = 'https://www.truper.com/ficha_jasp/index.php?codigo=';
+    var modules = 'https://www.truper.com/CatVigente/img/modulos/';
+    var output = '';
+    var i = 0;
+
+    jQuery.ajax({
+        type: "POST",
+        cache: false,
+        url: "https://www.truper.com/restLiveSearch/api-fix/products/searchByWord.php",
+        //url: "https://www.truper.com/restLiveSearchCatalog/api/products/searchByWordFix.php",
+        dataType: "json",
+        data: {'word': word},
+        ContentType: "application/json",
+
+        success: function (response) {
+            /* PRODUCTS*/
+            jQuery.each(response.data, function (key, val) {
+
+                if (i >= 10) {
+                    return false;
+                }
+
+                var lengthWord = word.length;
+                var match = val.pn.substring(0, lengthWord);
+                var leftOver = val.pn.substring(lengthWord);
+                var url = images + val.codigo + '.jpg';
+                var product_link = val.url;
+                var replace = '';
+                var is_new = (val.is_new == 1) ? '<div class="is_new-live"><img src="/media/assets/img/nuevo.svg" /></div>' : '';
+
+                /* loop through the codes associated to the module */
+                if (val.replace != "") {
+                    replace = '<div class="replace">';
+
+                    jQuery.each(val.replace, function (key, item) {
+                        replace += '<div><h5>SUSTITUYE A</h5><div>' + item.old_code + ' <span class="blank">|</span> ' + item.old_sku + '</div></div>';
+                    });
+
+                    replace += '</div>';
+                }
+                is_new = (replace == '') ? is_new : '';
+
+                output += '<div class="col-xs-2 col-xxs-6 col-md-2 mini-search-product"><a class=""  href="' + product_link + '" >';
+                output += '<div><img src="' + url + '" height="32" ></div>';
+                output += '<div class="descrip">';
+                output += '<div><div><p class="mini-search-product-name"><span class="highlight">' + match + '</span>' + leftOver + '</p>';
+                output += '<p class="mini-search-info">' + val.codigo + '</p>';
+                output += '<p class="mini-search-info">' + val.clave + '</p>';
+
+                if (localStorage.getItem('fixil') != null && localStorage.getItem('fixil') === true) {
+                    if (localStorage.getItem('fixcg') != null && localStorage.getItem('fixcg') != '' && localStorage.getItem('fixcg') != '0') {
+
+                        switch (localStorage.getItem('fixcg')) {
+                            case '1':
+                            default:
+                                output += '<p class="mini-search-info mini-search-info-price">' + '$' + addCommas(val.precio_may_calculado) + '</p>';
+                                break;
+                            case '4':
+                            case '5':
+                                output += '<p class="mini-search-info mini-search-info-price">' + '$' + addCommas(val.precio_dis_calculado) + '</p>';
+                                break;
+                        }
+                    } else {
+                        output += '<p class="mini-search-info mini-search-info-price">' + '$' + addCommas(val.precio_may_calculado) + '</p>';
+                    }
+                } else {
+                    output += '<p class="mini-search-info mini-search-info-price">' + '$' + addCommas(val.precio_may_calculado) + '</p>';
+                }
+
+                /*
+                if (val.stock && val.stock == 0) {
+                    output += '<span class="liveSearchSinExistencias">Agotado</span>';
+                }
+                 */
+
+                output += '</div>' + is_new + '</div>';
+                output += '' + replace + '';
+                output += '</div></a>';
+                output += '</div>';
+
+                /* loop through the codes associated to the module */
+                ul = '<ul>';
+                jQuery.each(val.links, function (key, item) {
+                    link = dataSheet + item.code;
+                    //ul += '<li><a href="' + link + '" target="_blank">' + item.codigo + '</a></li>';
+                    ul += '<li><a href="' + link + '" target="_blank"><span class="code">' + item.code + '</span><span class="sku">' + item.sku + '</span></a></li>';
+                });
+                ul += '<ul>';
+
+                /* Loads links to the dataSheets */
+                output += '<div name="' + val.modulo + '" class="hidden">';
+                output += '<div class="btn-ver_ficha">';
+                output += '<a id="verFicha" class="ver_ficha">';
+                output += '<div> <i class="fas fa-file-pdf"></i> </div>';
+                output += '<div>Ficha técnica</div><div><i class="fas fa-caret-up"></i></div>';
+                output += '</a><div class="codes_mod" id="codesMod"><div class="scrollbar"> ' + ul + ' </div></div>';
+                output += '</div></div>';
+                i++;
+            });
+            /* paints the output to the livesearch div */
+            jQuery('#modulesDesk .modulesDeskContent').html(output);
+            /* Loads the links to the datasheets info */
+            if (i > 0) {
+                loadGallery();
+            }
+
+            /* CATEGORIES */
+            var outputC = '';
+            var i = 0;``
+            outputC += '<div class="categoriesDesk-title">Categorías</div>';
+            jQuery.each(response.categories, function (key, category) {
+
+                var lengthWord = word.length;
+                var match = category.name.substring(0, lengthWord);
+                var leftOver = category.name.substring(lengthWord);
+                outputC += '<div class="category"><a href="' + category.url + '"><p ><span class="highlight">' + match + '</span>' + leftOver + '</p></a></div>';
+                i++;
+            });
+
+            outputC += '<a href="/catalogsearch/result/?q=' + word.replace(' ', '+') + ' " class="titleCategories">Ver todos los resultados<i class="fa fa-chevron-right" aria-hidden="true"></i></a>';
+
+            /* paints the output to the livesearch div */
+            jQuery('#categoriesDesk').html(outputC);
+        },
+        error: function (response) {
+            console.log(response);
+        }
+    });
+}
+
+function addCategories(word) {
+    var site = 'https://www.truper.com/CatVigente/';
+
+    jQuery.ajax({
+        type: "POST",
+        cache: false,
+        url: "https://www.truper.com/restLiveSearch/api-fix/categories/searchCategories.php",
+        dataType: "json",
+        data: {'word': word},
+        ContentType: "application/json",
+        success: function (response) {
+            var output = '';
+            var i = 0;
+            output += (i > 0) ? '<div class="categoriesDesk-title">Categorías</div>' : '';
+            jQuery.each(response.data, function (key, category) {
+
+                var lengthWord = word.length;
+                var match = category.name.substring(0, lengthWord);
+                var leftOver = category.name.substring(lengthWord);
+                output += '<div class="category"><a href="' + category.url + '"><p ><span class="highlight">' + match + '</span>' + leftOver + '</p></a></div>';
+                i++;
+            });
+
+            output += '<a href="/catalogsearch/result/?q=' + word.replace(' ', '+') + ' " class="titleCategories">Ver todos los resultados<i class="fa fa-chevron-right" aria-hidden="true"></i></a>';
+
+            /* paints the output to the livesearch div */
+            jQuery('#categoriesDesk').html(output);
+        },
+        error: function (response) {
+            console.log('Ups something is not working properly');
+        }
+    });
+}
+
+function loadGallery() {
+    jQuery('.live-search').fancybox({
+        protect: false,
+        loop: false,
+        transitionEffect: 'slide',
+        animationEffect: 'zoom',
+        buttons: ['zoom', 'download', 'close'],
+        infinite: true,
+        clickOutside: 'close',
+        arrows: false,
+        touch: {
+            vertical: true,
+            momentum: true
+        },
+        mobile: {
+            clickOutside: 'close',
+            clickSlide: "close"
+        },
+        caption: function (instance, item) {
+            if (item.type === 'image') {
+                var url = item.src;
+                var end = url.indexOf(".jpg");
+                var start = url.lastIndexOf("/");
+                var modulo = url.substring(start + 1, end);
+                var dataSheet = jQuery('[name=' + modulo + ']').html();
+                caption = dataSheet;
+            }
+            return caption;
+        }
+    });
+}
+
+jQuery(document).ready(function () {
+    jQuery(document).on('click', '.ver_ficha', function (e) {
+        var codes = jQuery(this).next(".codes_mod");
+        if (codes.css("display") == "none") {
+            codes.slideDown(250);
+        } else {
+            codes.slideUp(250);
+        }
+    });
+
+    jQuery(document).on('click', 'html', function () {
+        jQuery('.codes_mod').slideUp(250);
+    });
+
+    jQuery(document).on('click', '.ver_ficha', function (e) {
+        e.stopPropagation();
+    });
+});
+
+jQuery(document).on('click', '#category', function (e) {
+    var page = jQuery(this).attr('name');
+    var link = './controllers/searchPage.php?page=' + page;
+    window.open(link, "", "width='100%', height='100%'");
+    return false;
+});
+
+jQuery(document).on('click, focus', '#search', function (e) {
+    jQuery('.containerLiveSearchMob').fadeIn();
+    jQuery('.containerLiveSearchDesk').fadeIn();
+});
+
+jQuery(document).on('click', 'html , .containerLiveSearchMob , .containerLiveSearchDesk', function (e) {
+    jQuery('.containerLiveSearchMob').fadeOut();
+    jQuery('.containerLiveSearchDesk').fadeOut();
+});
+
+jQuery(document).on('click', '#search , .liveSearchMob , .liveSearchDesk , .fancybox-container', function (e) {
+    e.stopPropagation();
+});
+
+function openpage(page) {
+    url = './controllers/searchPage.php?page=' + page;
+    window.location.href = url;
+}
+
+function addCommas(nStr) {
+    nStr += '';
+    var x = nStr.split('.');
+    var x1 = x[0];
+    var x2 = x.length > 1 ? '.' + x[1] : '';
+    var rgx = /(\d+)(\d{3})/;
+    while (rgx.test(x1)) {
+        x1 = x1.replace(rgx, '$1' + ',' + '$2');
+    }
+    return x1 + x2;
+}
